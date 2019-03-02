@@ -1,0 +1,57 @@
+jobs:
+# Replace params / app_name with your heroku app name
+- name: deploy-app
+  plan:
+  - aggregate:
+    - get: monitoring-app
+      trigger: true
+    - get: monitoring-infra
+  - task: mvn_build
+    file: monitoring-infra/concourse/java/task.yml
+    input_mapping: {source: monitoring-app}
+
+  - task: push_to_heroku
+    file: monitoring-infra/concourse/heroku/push_master_to_heroku.yml
+    input_mapping: {source: monitoring-app}
+    params:
+      app_name: ((heroku_app_name))-app-ci
+      heroku_email: ((heroku_email))
+      heroku_api_token: ((heroku_api_key))
+
+
+- name: infra
+  plan:
+  - aggregate:
+    - get: monitoring-infra
+  - task: apply
+    file: monitoring-infra/concourse/terraform/task.yml
+    input_mapping: {source: monitoring-infra}
+    params:
+      github_token: ((github_token))
+      heroku_api_key: ((heroku_api_key))
+      statuscake_api_key: ((statuscake_api_key))
+      command: apply
+      directories: |
+          terraform
+  - put: monitoring-infra
+    params:
+      repository: with-state
+      rebase: true
+
+resources:
+
+# Replace with your own repository
+- name: monitoring-app
+  type: git
+  source:
+      uri: git@github.com:athenus-rufus/exam-app.git
+      branch: master
+      private_key: ((deploy_key_app))
+
+# Replace with your own repository
+- name: monitoring-infra
+  type: git
+  source:
+      uri: git@github.com:athenus-rufus/exam-infra.git
+      branch: master
+      private_key: ((deploy_key_infra))

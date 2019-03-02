@@ -1,0 +1,20 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: maven
+    tag: alpine
+
+inputs:
+  - name: source
+  - name: monitoring-infra
+
+outputs:
+  - name: jar-file
+
+run:
+  path: monitoring-infra/concourse/java/task.sh
+
+caches:
+  - path: .m2/

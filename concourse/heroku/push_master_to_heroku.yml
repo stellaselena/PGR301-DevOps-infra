@@ -1,0 +1,31 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: psharkey/heroku-cli
+    tag: "latest"
+
+inputs:
+- name: source
+
+params:
+    heroku_email:
+    heroku_api_token:
+    app_name:
+
+run:
+  path: sh
+  dir: source
+  args:
+    - -exc
+    - |
+      cat > /root/.netrc <<EOF
+      machine api.heroku.com
+          login ${heroku_email}
+          password ${heroku_api_token}
+      machine git.heroku.com
+          login ${heroku_email}
+          password ${heroku_api_token}
+      EOF
+      git push https://git.heroku.com/${app_name}.git master:refs/heads/master
